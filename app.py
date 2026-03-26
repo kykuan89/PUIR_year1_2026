@@ -185,7 +185,7 @@ def get_plot_series(df, schema, q):
 
 # ---------- UI ----------
 st.set_page_config(page_title="115學年度大一新生學習適應性分析", layout="wide")
-st.title("115學年度大一新生學習適應性分析2")
+st.title("115學年度大一新生學習適應性分析")
 
 df, schema = load_data(FILE_PATH)
 
