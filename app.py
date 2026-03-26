@@ -11,7 +11,7 @@ from normalization import (
     add_college_column
 )
 
-FILE_PATH = "114學年度填答總表_含班級學號12102025_去識別化2.xlsx"
+FILE_PATH = "114學年度填答總表_含班級學號12102025_去識別化.xlsx"
 SHEET = "1210-已填總表"
 
 # ---------- Data loading ----------
@@ -184,7 +184,7 @@ def get_plot_series(df, schema, q):
 
 
 # ---------- UI ----------
-st.set_page_config(page_title="115學年度大一新生學習適應性分析", layout="wide")
+st.set_page_config(page_title="115學年度大一新生學習適應性分析2", layout="wide")
 st.title("115學年度大一新生學習適應性分析")
 
 df, schema = load_data(FILE_PATH)
