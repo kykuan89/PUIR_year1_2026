@@ -366,6 +366,7 @@ NORMALIZE_MAP = {
         "type": "single",
         "contains": {
             "foreign": "國外",
+            "國外": "國外",
             "taichung": "臺中市",
             "taipei": "臺北市",
             "kaohsiung": "高雄市",
@@ -1114,15 +1115,20 @@ def normalize_column(series, mapping):
 
 _NUM_RE = re.compile(r"^\s*(\d+)\s*(.*)$")
 
+UNKNOWN_KEYWORDS = [
+    "unknown",
+    "dont know",
+    "don't know",
+    "不知",
+    "不知道",
+    "6 unknown"
+]
+
+def is_unknown(s):
+    low = s.lower()
+    return any(k in low for k in UNKNOWN_KEYWORDS)
+
 def parse_likert_1to5_unknown6(x, unknown_code=6, unknown_label="不知道"):
-    """
-    輸入可能是：
-      1非常不同意 / 1 Strongly disagree / 6不知道 / 6 unknown / unknown
-    輸出：
-      (num, cat)
-      - num: 1~5 的 int；不知道則為 pd.NA
-      - cat: '1'~'5' 或 '不知道'（用來畫圖）
-    """
     if pd.isna(x):
         return (pd.NA, pd.NA)
 
@@ -1130,23 +1136,23 @@ def parse_likert_1to5_unknown6(x, unknown_code=6, unknown_label="不知道"):
     if not s:
         return (pd.NA, pd.NA)
 
-    low = s.lower()
-    if low in {"unknown", "dont know", "don't know"}:
+    #  (1) 最優先：先抓所有 unknown（無論有沒有數字）
+    if is_unknown(s):
         return (pd.NA, unknown_label)
 
     m = _NUM_RE.match(s)
+
+    # (2) 沒有數字開頭
     if not m:
-        # 沒有數字開頭就當作類別（例如有人填「不知道」）
-        if "不知" in s or low == "unknown":
-            return (pd.NA, unknown_label)
         return (pd.NA, s)
 
     code = int(m.group(1))
+
+    # (3) 數字是 unknown code（例如 6）
     if code == unknown_code:
         return (pd.NA, unknown_label)
 
     if 1 <= code <= 5:
-        return (code, str(code))  # cat 用 '1'...'5' 最乾淨（不會被中英拆裂）
+        return (code, str(code))
 
-    # 其他數字（若真的存在）
     return (pd.NA, str(code))

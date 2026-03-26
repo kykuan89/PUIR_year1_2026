@@ -28,12 +28,12 @@ def load_data(path: str = FILE_PATH, sheet: str = SHEET):
     obj_cols = df.select_dtypes(include=["object", "string"]).columns
     df[obj_cols] = df[obj_cols].apply(lambda s: s.astype("string").str.strip())
 
-    #auto_cols = auto_detect_likert_1to5_unknown6_cols(df)
+    auto_cols = auto_detect_likert_1to5_unknown6_cols(df)
 
-#    for col in auto_cols:
-#        parsed = df[col].apply(parse_likert_1to5_unknown6)
-#        df[col + "__num"] = parsed.apply(lambda t: t[0])  # 1~5 或 NA（給平均/SD）
-#        df[col + "__cat"] = parsed.apply(lambda t: t[1])  # '1'..'5' 或 '不知道'（給分布圖）
+    for col in auto_cols:
+        parsed = df[col].apply(parse_likert_1to5_unknown6)
+        df[col + "__num"] = parsed.apply(lambda t: t[0])  # 1~5 或 NA（給平均/SD）
+        df[col + "__cat"] = parsed.apply(lambda t: t[1])  # '1'..'5' 或 '不知道'（給分布圖）
 
     # 4) 建 schema：優先吃 NORMALIZE_MAP 的 type（避免欄名沒寫「可複選」而判錯）
     exclude_cols = set(["已填人"])
@@ -94,12 +94,12 @@ def auto_detect_likert_1to5_unknown6_cols(df: pd.DataFrame, min_15_unique: int =
                     codes.add(code)
                 elif code == 6:
                     # 只有 6 且文字像 unknown/不知道 才算
-                    if ("unknown" in tail) or ("don't know" in tail) or ("dont know" in tail) or ("不知" in v):
+                    if ("unknown" in tail) or ("don't know" in tail) or ("dont know" in tail) or ("不知" in v) or ("unknown" in v):
                         has_unknown6 = True
             else:
                 # 有些資料可能直接填 unknown / 不知道（沒有數字）
                 low = v.lower()
-                if low in {"unknown", "don't know", "dont know"} or ("不知" in v):
+                if low in {"unknown", "don't know", "dont know"} or ("不知" in v) or ("unknown" in v):
                     has_unknown6 = True
 
         if (len(codes) >= min_15_unique) and has_unknown6:
