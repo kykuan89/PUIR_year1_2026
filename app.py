@@ -17,25 +17,24 @@ SHEET = "1210-已填總表"
 # ---------- Data loading ----------
 @st.cache_data
 def load_data(path: str = FILE_PATH, sheet: str = SHEET):
-    # 1) 讀檔
     df = pd.read_excel(path, sheet_name=sheet)
-
-    # 2) 去掉全空欄
     df = df.dropna(axis=1, how="all")
 
-    # 3) 統一把字串欄位做 strip（避免前後空白造成類別炸裂）
-    #    注意：不要把數字欄硬轉字串，所以這裡只對 object/string 欄位處理
     obj_cols = df.select_dtypes(include=["object", "string"]).columns
     df[obj_cols] = df[obj_cols].apply(lambda s: s.astype("string").str.strip())
 
-    auto_cols = auto_detect_likert_1to5_unknown6_cols(df)
+    auto_cols = auto_detect_likert_1to5_cols(df)
 
+    # 一次建立 Likert 衍生欄位
+    likert_new_cols = {}
     for col in auto_cols:
         parsed = df[col].apply(parse_likert_1to5_unknown6)
-        df[col + "__num"] = parsed.apply(lambda t: t[0])  # 1~5 或 NA（給平均/SD）
-        df[col + "__cat"] = parsed.apply(lambda t: t[1])  # '1'..'5' 或 '不知道'（給分布圖）
+        likert_new_cols[col + "__num"] = parsed.apply(lambda t: t[0])
+        likert_new_cols[col + "__cat"] = parsed.apply(lambda t: t[1])
 
-    # 4) 建 schema：優先吃 NORMALIZE_MAP 的 type（避免欄名沒寫「可複選」而判錯）
+    if likert_new_cols:
+        df = pd.concat([df, pd.DataFrame(likert_new_cols, index=df.index)], axis=1)
+
     exclude_cols = set(["已填人"])
     schema = {}
     for col in df.columns:
@@ -48,32 +47,34 @@ def load_data(path: str = FILE_PATH, sheet: str = SHEET):
         else:
             schema[col] = {"type": infer_question_type(col, df[col])}
 
-    # 5) 套用 normalization rules
+    # 一次處理 normalization
+    replace_cols = {}
+    norm_new_cols = {}
+
     for col, rule in NORMALIZE_MAP.items():
         if col not in df.columns:
             continue
 
-        # 以 rule.type 為準（沒有才退回 schema）
         qtype = rule.get("type") or schema.get(col, {}).get("type", "single")
 
         if qtype == "multiselect":
-            df[col + "_norm"] = df[col].apply(lambda x: normalize_multiselect_cell(x, rule))
+            norm_new_cols[col + "_norm"] = df[col].apply(lambda x: normalize_multiselect_cell(x, rule))
         else:
-            df[col] = normalize_column_single(df[col], rule)
+            replace_cols[col] = normalize_column_single(df[col], rule)
 
-    #df = add_college_column(df, class_col="班級")
+    for col, series in replace_cols.items():
+        df[col] = series
+
+    if norm_new_cols:
+        df = pd.concat([df, pd.DataFrame(norm_new_cols, index=df.index)], axis=1)
+
+    df = df.copy()
 
     return df, schema
 
 NUM_PREFIX = re.compile(r"^\s*(\d+)\s*(.*)$", re.I)
 
-def auto_detect_likert_1to5_unknown6_cols(df: pd.DataFrame, min_15_unique: int = 3) -> list[str]:
-    """
-    自動找出像「1~5 + 6不知道/unknown」這種欄位。
-    - 只掃描 object/string 欄
-    - 需要：1~5 至少出現 min_15_unique 個不同碼
-    - 且出現 6，並且尾巴包含 不知道/unknown/don't know 之類
-    """
+def auto_detect_likert_1to5_cols(df: pd.DataFrame, min_15_unique: int = 3) -> list[str]:
     cols = []
     obj_cols = df.select_dtypes(include=["object", "string"]).columns
 
@@ -83,26 +84,27 @@ def auto_detect_likert_1to5_unknown6_cols(df: pd.DataFrame, min_15_unique: int =
             continue
 
         codes = set()
-        has_unknown6 = False
+        total = len(s)
 
-        for v in s.unique():
+        for v in s:
             m = NUM_PREFIX.match(v)
             if m:
                 code = int(m.group(1))
-                tail = (m.group(2) or "").strip().lower()
                 if 1 <= code <= 5:
                     codes.add(code)
-                elif code == 6:
-                    # 只有 6 且文字像 unknown/不知道 才算
-                    if ("unknown" in tail) or ("don't know" in tail) or ("dont know" in tail) or ("不知" in v) or ("unknown" in v):
-                        has_unknown6 = True
-            else:
-                # 有些資料可能直接填 unknown / 不知道（沒有數字）
-                low = v.lower()
-                if low in {"unknown", "don't know", "dont know"} or ("不知" in v) or ("unknown" in v):
-                    has_unknown6 = True
 
-        if (len(codes) >= min_15_unique) and has_unknown6:
+        # ✅ 條件1：至少有幾種 Likert 分數
+        cond1 = len(codes) >= min_15_unique
+
+        # ✅ 條件2：大部分值是 1~5（避免誤判）
+        likert_ratio = sum(
+            1 for v in s
+            if (NUM_PREFIX.match(v) and 1 <= int(NUM_PREFIX.match(v).group(1)) <= 5)
+        ) / total
+
+        cond2 = likert_ratio > 0.5
+
+        if cond1 and cond2:
             cols.append(col)
 
     return cols
@@ -221,17 +223,28 @@ result = summarize(df, schema, q=q, group=None if group == "(不分組)" else gr
 q_base = q.replace("__cat", "").replace("__num", "")
 st.subheader(f"題目：{q_base}")
 
-# ---- 顯示 Likert 平均與標準差（排除 6 不知道）----
-num_col = q_base + "__num"
+# ---- 顯示 Likert 平均與標準差（只要有 1~5 就顯示）----
+num_col = f"{q_base}__num"
+
 if num_col in df.columns:
-    v = df[num_col].dropna()
-    if not v.empty:
+    raw = pd.to_numeric(df[num_col], errors="coerce")
+    v = raw.dropna()
+
+    total_n = len(raw)
+    valid_n = len(v)
+    unknown_n = total_n - valid_n
+
+    if valid_n > 0:
+        sd = v.std(ddof=1)
+
         st.markdown(
             f"""
-**Likert 統計（排除「不知道」）**  
-- 有效樣本數 n = {len(v)}  
-- 平均值 Mean = **{v.mean():.2f}**  
-- 標準差 SD = **{v.std(ddof=1):.2f}**
+**Likert 統計**
+- 全部樣本數 N = {total_n}
+- 有效樣本數（排除不知道） n = {valid_n}
+- 不知道 / 缺失 = {unknown_n}
+- 平均值 Mean = **{v.mean():.2f}**
+- 標準差 SD = **{sd:.2f}**
 """
         )
 
