@@ -11,7 +11,7 @@ from normalization import (
     add_college_column
 )
 
-FILE_PATH = "114學年度填答總表_含班級學號12102025_去識別化.xlsx"
+FILE_PATH = "114學年度填答總表_含班級學號12102025_去識別化2.xlsx"
 SHEET = "1210-已填總表"
 
 # ---------- Data loading ----------
