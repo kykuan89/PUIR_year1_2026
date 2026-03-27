@@ -8,7 +8,9 @@ from normalization import (
     normalize_multiselect_cell,
     NORMALIZE_MAP,
     parse_likert_1to5_unknown6,
-    add_college_column
+    add_college_column,
+    infer_college_from_class,
+    PREFIX_TO_COLLEGE
 )
 
 FILE_PATH = "114學年度填答總表_含班級學號12102025_去識別化.xlsx"
@@ -25,7 +27,7 @@ def load_data(path: str = FILE_PATH, sheet: str = SHEET):
 
     auto_cols = auto_detect_likert_1to5_cols(df)
 
-    # 一次建立 Likert 衍生欄位
+    # 建立 Likert 衍生欄位
     likert_new_cols = {}
     for col in auto_cols:
         parsed = df[col].apply(parse_likert_1to5_unknown6)
@@ -47,7 +49,7 @@ def load_data(path: str = FILE_PATH, sheet: str = SHEET):
         else:
             schema[col] = {"type": infer_question_type(col, df[col])}
 
-    # 一次處理 normalization
+    # 處理 normalization
     replace_cols = {}
     norm_new_cols = {}
 
@@ -93,10 +95,10 @@ def auto_detect_likert_1to5_cols(df: pd.DataFrame, min_15_unique: int = 3) -> li
                 if 1 <= code <= 5:
                     codes.add(code)
 
-        # ✅ 條件1：至少有幾種 Likert 分數
+        # 條件1：至少有幾種 Likert 分數
         cond1 = len(codes) >= min_15_unique
 
-        # ✅ 條件2：大部分值是 1~5（避免誤判）
+        # 條件2：大部分值是 1~5（避免誤判）
         likert_ratio = sum(
             1 for v in s
             if (NUM_PREFIX.match(v) and 1 <= int(NUM_PREFIX.match(v).group(1)) <= 5)
@@ -183,6 +185,48 @@ def get_plot_series(df, schema, q):
     return df[q].astype("string")
 
 
+def apply_normalized_order(result: pd.DataFrame, col: str, college_order, class_order=None):
+    if col not in result.columns:
+        return result
+
+    if col == "學院":
+        order = college_order
+    elif col == "班級":
+        if class_order is None:
+            unique_classes = result[col].dropna().astype(str).unique()
+            class_order = sorted(unique_classes, key=lambda c: parse_class_key(c, college_order))
+        order = class_order
+    else:
+        return result
+
+    result[col] = pd.Categorical(result[col].astype(str), categories=order, ordered=True)
+    sort_cols = [col] + [c for c in result.columns if c != col]
+    result = result.sort_values(sort_cols)
+    return result
+
+
+def parse_class_key(class_name: str, college_order=None):
+    import re
+    text = str(class_name or "").strip()
+    if not text:
+        return (len(college_order) if college_order is not None else 999, "", 0, "")
+
+    # 依照 normalization.py 順序: 先學院，再年級，最後班別
+    college = infer_college_from_class(text) or "未分類"
+    college_rank = college_order.index(college) if college_order and college in college_order else (len(college_order) if college_order else 999)
+
+    m = re.match(r'^(.+?)([一二三123])([A-Za-z])$', text)
+    if m:
+        prefix = m.group(1)
+        year_str = m.group(2)
+        class_str = m.group(3)
+        year_num = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}.get(year_str, 0)
+        return (college_rank, prefix, year_num, class_str)
+
+    # 無法解析年級/班別時先依校院、再字串排序
+    return (college_rank, text, 0, "")
+
+
 # ---------- UI ----------
 st.set_page_config(page_title="115學年度大一新生學習適應性分析", layout="wide")
 st.title("115學年度大一新生學習適應性分析")
@@ -190,6 +234,10 @@ st.title("115學年度大一新生學習適應性分析")
 df, schema = load_data(FILE_PATH)
 
 df = add_college_column(df)
+
+# 根據 normalization.py 的 PREFIX_TO_COLLEGE，取出學院預設順序（出現順序保留）
+college_order = list(dict.fromkeys(PREFIX_TO_COLLEGE.values()))
+
 all_questions = [
     c for c in df.columns
     if c not in ["已填人"]
@@ -201,12 +249,12 @@ all_questions = [
 default_groups = ["(不分組)"]
 candidate_groups = [
     c for c in [
-        "1性別",
-        "2身分別",
+        "性別",
+        "身分別",
         "學院",         
         "班級",
-        "5原畢業學校之類型",
-        "6原畢業學校所在地區",
+        "原畢業學校之類型",
+        "原畢業學校所在地區",
     ]
     if c in df.columns
 ]
@@ -218,35 +266,122 @@ with st.sidebar:
     group = st.selectbox("分組比較", group_options)
     as_percent = st.checkbox("顯示百分比 (%)", value=True)
 
-result = summarize(df, schema, q=q, group=None if group == "(不分組)" else group, as_percent=as_percent)
+    # 母體篩選：學院、班級 可複選
+    population_attrs = st.multiselect(
+        "母體欄位（可複選，留空即全校）", 
+        ["學院", "班級"],
+        default=[]
+    )
+
+    selected_colleges = []
+    selected_classes = []
+    if "學院" in population_attrs and "學院" in df.columns:
+        selected_colleges = st.multiselect(
+            "選取學院（可多選）",
+            sorted(df["學院"].dropna().astype(str).unique()),
+            default=[]
+        )
+    if "班級" in population_attrs and "班級" in df.columns:
+        selected_classes = st.multiselect(
+            "選取班級（可多選）",
+            sorted(df["班級"].dropna().astype(str).unique()),
+            default=[]
+        )
+
+# Apply population filter (母體)：符合任一選項
+mask = pd.Series(True, index=df.index)
+if population_attrs:
+    if selected_colleges or selected_classes:
+        mask = pd.Series(False, index=df.index)
+        if selected_colleges:
+            mask |= df["學院"].isin(selected_colleges)
+        if selected_classes:
+            mask |= df["班級"].isin(selected_classes)
+    else:
+        # 已選欄位但未選值：顯示空結果。
+        mask = pd.Series(False, index=df.index)
+
+filtered_df = df[mask]
+if filtered_df.empty:
+    st.warning("母體篩選後無資料，請調整學院 / 班級選擇。")
+
+result = summarize(filtered_df, schema, q=q, group=None if group == "(不分組)" else group, as_percent=as_percent)
+
+# 若為學院/班級相關問題，先套用 normalization.py 提供的預設排序
+grouped = (group != "(不分組)")
+if grouped:
+    x_col = result.columns[1]
+    group_col = result.columns[0]
+else:
+    x_col = result.columns[0]
+    group_col = None
+
+if x_col in ["學院", "班級"]:
+    result = apply_normalized_order(result, x_col, college_order)
+
+if grouped and group_col in ["學院", "班級"]:
+    result = apply_normalized_order(result, group_col, college_order)
 
 q_base = q.replace("__cat", "").replace("__num", "")
 st.subheader(f"題目：{q_base}")
 
 # ---- 顯示 Likert 平均與標準差（只要有 1~5 就顯示）----
 num_col = f"{q_base}__num"
-
 if num_col in df.columns:
-    raw = pd.to_numeric(df[num_col], errors="coerce")
-    v = raw.dropna()
+    raw_all = pd.to_numeric(df[num_col], errors="coerce")
+    v_all = raw_all.dropna()
 
-    total_n = len(raw)
-    valid_n = len(v)
-    unknown_n = total_n - valid_n
+    total_n_all = len(raw_all)
+    valid_n_all = len(v_all)
+    unknown_n_all = total_n_all - valid_n_all
 
-    if valid_n > 0:
-        sd = v.std(ddof=1)
+    raw_filtered = pd.Series(dtype="float")
+    v_filtered = pd.Series(dtype="float")
+    total_n_filtered = valid_n_filtered = unknown_n_filtered = 0
+    if not filtered_df.empty:
+        raw_filtered = pd.to_numeric(filtered_df[num_col], errors="coerce")
+        v_filtered = raw_filtered.dropna()
+        total_n_filtered = len(raw_filtered)
+        valid_n_filtered = len(v_filtered)
+        unknown_n_filtered = total_n_filtered - valid_n_filtered
 
-        st.markdown(
-            f"""
-**Likert 統計**
-- 全部樣本數 N = {total_n}
-- 有效樣本數（排除不知道） n = {valid_n}
-- 不知道 / 缺失 = {unknown_n}
-- 平均值 Mean = **{v.mean():.2f}**
-- 標準差 SD = **{sd:.2f}**
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**全校 Likert 統計（目前的為全校）**")
+        if valid_n_all > 0:
+            sd_all = v_all.std(ddof=1)
+            st.markdown(
+                f"""
+- 全部樣本數 N = {total_n_all}
+- 有效樣本數（排除不知道） n = {valid_n_all}
+- 不知道 / 缺失 = {unknown_n_all}
+- 平均值 Mean = **{v_all.mean():.2f}**
+- 標準差 SD = **{sd_all:.2f}**
 """
-        )
+            )
+        else:
+            st.write("沒有有效 Likert 數值資料（全校）。")
+
+    filtered_active = bool(population_attrs and (selected_colleges or selected_classes))
+    with col2:
+        if filtered_active:
+            st.markdown("**篩選後 Likert 統計**")
+            if valid_n_filtered > 0:
+                sd_filtered = v_filtered.std(ddof=1)
+                st.markdown(
+                    f"""
+- 全部樣本數 N = {total_n_filtered}
+- 有效樣本數（排除不知道） n = {valid_n_filtered}
+- 不知道 / 缺失 = {unknown_n_filtered}
+- 平均值 Mean = **{v_filtered.mean():.2f}**
+- 標準差 SD = **{sd_filtered:.2f}**
+"""
+                )
+            else:
+                st.write("沒有有效 Likert 數值資料（篩選後）。")
+        else:
+            st.write("未選擇母體篩選或未有選值，篩選後統計與全校相同。")
 
 #st.write("schema type:", schema.get(q))
 #st.write("norm col exists:", q + "_norm" in df.columns)
@@ -255,16 +390,37 @@ if q + "_norm" in df.columns:
 
 y = "percent" if as_percent else "count"
 
+category_orders = {}
+if x_col in ["學院", "班級"]:
+    if x_col == "學院":
+        category_orders[x_col] = college_order
+    else:  # 班級
+        unique_x = result[x_col].dropna().astype(str).unique()
+        category_orders[x_col] = sorted(unique_x, key=lambda c: parse_class_key(c, college_order))
+
+if grouped and group in ["學院", "班級"]:
+    if group == "學院":
+        category_orders[group] = college_order
+    else:  # 班級
+        unique_group = result[group].dropna().astype(str).unique()
+        category_orders[group] = sorted(unique_group, key=lambda c: parse_class_key(c, college_order))
+
+display_result = result.copy()
+if "count" in display_result.columns:
+    display_result = display_result.rename(columns={"count": "人數"})
+if "percent" in display_result.columns:
+    display_result = display_result.rename(columns={"percent": "百分比"})
+    display_result["百分比"] = display_result["百分比"].astype(float).round(2).map(lambda x: f"{x:.2f}%")
+
 if group == "(不分組)":
-    fig = px.bar(result, x=result.columns[0], y=y)
+    fig = px.bar(result, x=x_col, y=y, category_orders=category_orders if category_orders else None)
     st.plotly_chart(fig, width="stretch")
-    st.dataframe(result)
+    st.dataframe(display_result)
 else:
     # 分組時 result 欄位順序是: [group, q_use, count, (percent)]
-    x_col = result.columns[1]   # 這就是 q_use
-    fig = px.bar(result, x=x_col, y=y, color=group, barmode="group")
+    fig = px.bar(result, x=x_col, y=y, color=group, barmode="group", category_orders=category_orders if category_orders else None)
     st.plotly_chart(fig, width="stretch")
-    st.dataframe(result)
+    st.dataframe(display_result)
 
 
 
