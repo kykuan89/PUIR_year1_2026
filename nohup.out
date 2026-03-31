@@ -1,0 +1,269 @@
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8502
+  Network URL: http://140.128.43.154:8502
+  External URL: http://140.128.43.154:8502
+
+[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/[0m [31m [0m
+[31m [0m [1mexec_code.py[0m:129 in exec_func_with_error_handling                                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/[0m [31m [0m
+[31m [0m [1mscript_runner.py[0m:689 in code_to_exec                                                 [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/大一/[0m[1mapp.py[0m:456 in <module>                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m453 [0m[2m│   │   [0mcategory_orders[group] = [96msorted[0m(unique_group, key=[94mlambda[0m c: parse_clas [31m [0m
+[31m [0m   [2m454 [0m                                                                               [31m [0m
+[31m [0m   [2m455 [0m[94mif[0m group == [33m"[0m[33m(不分組)[0m[33m"[0m:                                                        [31m [0m
+[31m [0m [31m❱ [0m456 [2m│   [0mfig = [1;4mpx.bar(result, x=x_col, y=y, category_orders=category_orders [0m[1;4;94mif[0m[1;4m cate[0m [31m [0m
+[31m [0m   [2m457 [0m[2m│   [0mst.plotly_chart(fig, width=[33m"[0m[33mstretch[0m[33m"[0m)                                      [31m [0m
+[31m [0m   [2m458 [0m[2m│   [0mshow_table(result)                                                         [31m [0m
+[31m [0m   [2m459 [0m[94melse[0m:                                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_chart_types.py[0m: [31m [0m
+[31m [0m 381 in bar                                                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 378 [0m[2;33m│   [0m[33mIn a bar plot, each row of `data_frame` is represented as a rectangular[0m   [31m [0m
+[31m [0m   [2m 379 [0m[2;33m│   [0m[33mmark.[0m                                                                     [31m [0m
+[31m [0m   [2m 380 [0m[2;33m│   [0m[33m"""[0m                                                                       [31m [0m
+[31m [0m [31m❱ [0m 381 [2m│   [0m[94mreturn[0m [1;4mmake_figure([0m                                                       [31m [0m
+[31m [0m   [2m 382 [0m[2m│   │   [0m[1;4margs=[0m[1;4;96mlocals[0m[1;4m(),[0m                                                        [31m [0m
+[31m [0m   [2m 383 [0m[2m│   │   [0m[1;4mconstructor=go.Bar,[0m                                                   [31m [0m
+[31m [0m   [2m 384 [0m[2m│   │   [0m[1;4mtrace_patch=[0m[1;4;96mdict[0m[1;4m(textposition=[0m[1;4;33m"[0m[1;4;33mauto[0m[1;4;33m"[0m[1;4m),[0m                                [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_core.py[0m:2511 in [31m [0m
+[31m [0m make_figure                                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m2508 [0m[2m│   [0mlayout_patch = layout_patch [95mor[0m {}                                         [31m [0m
+[31m [0m   [2m2509 [0m[2m│   [0mapply_default_cascade(args, constructor=constructor)                      [31m [0m
+[31m [0m   [2m2510 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m [31m❱ [0m2511 [2m│   [0margs = [1;4mbuild_dataframe(args, constructor)[0m                                 [31m [0m
+[31m [0m   [2m2512 [0m[2m│   [0m[94mif[0m constructor [95min[0m [go.Treemap, go.Sunburst, go.Icicle] [95mand[0m args[[33m"[0m[33mpath[0m[33m"[0m] [95mi[0m [31m [0m
+[31m [0m   [2m2513 [0m[2m│   │   [0margs = process_dataframe_hierarchy(args)                              [31m [0m
+[31m [0m   [2m2514 [0m[2m│   [0m[94mif[0m constructor [95min[0m [go.Pie]:                                               [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_core.py[0m:1757 in [31m [0m
+[31m [0m build_dataframe                                                                      [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1754 [0m[2m│   │   [0margs[[33m"[0m[33mcolor[0m[33m"[0m] = [94mNone[0m                                                  [31m [0m
+[31m [0m   [2m1755 [0m[2m│   [0m[2m# now that things have been prepped, we do the systematic rewriting of `a[0m [31m [0m
+[31m [0m   [2m1756 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m [31m❱ [0m1757 [2m│   [0mdf_output, wide_id_vars = [1;4mprocess_args_into_dataframe([0m                    [31m [0m
+[31m [0m   [2m1758 [0m[2m│   │   [0m[1;4margs,[0m                                                                 [31m [0m
+[31m [0m   [2m1759 [0m[2m│   │   [0m[1;4mwide_mode,[0m                                                            [31m [0m
+[31m [0m   [2m1760 [0m[2m│   │   [0m[1;4mvar_name,[0m                                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_core.py[0m:1358 in [31m [0m
+[31m [0m process_args_into_dataframe                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1355 [0m[2m│   │   │   │   │   │   [0m)                                                     [31m [0m
+[31m [0m   [2m1356 [0m[2m│   │   │   │   │   │   [0m[94mif[0m argument == [33m"[0m[33mindex[0m[33m"[0m:                               [31m [0m
+[31m [0m   [2m1357 [0m[2m│   │   │   │   │   │   │   [0merr_msg += [33m"[0m[33m\n[0m[33m To use the index, pass it in direc[0m [31m [0m
+[31m [0m [31m❱ [0m1358 [2m│   │   │   │   │   │   [0m[1;4;94mraise[0m[1;4m [0m[1;4;96mValueError[0m[1;4m(err_msg)[0m                             [31m [0m
+[31m [0m   [2m1359 [0m[2m│   │   │   │   [0m[94melif[0m length [95mand[0m (actual_len := [96mlen[0m(df_input)) != length:      [31m [0m
+[31m [0m   [2m1360 [0m[2m│   │   │   │   │   [0m[94mraise[0m [96mValueError[0m(                                         [31m [0m
+[31m [0m   [2m1361 [0m[2m│   │   │   │   │   │   [0m[33m"[0m[33mAll arguments should have the same length. [0m[33m"[0m         [31m [0m
+[31m────────────────────────────────────────────────────────────────────────────────────────[0m
+[1;91mValueError: [0mValue of [32m'y'[0m is not the name of a column in [32m'data_frame'[0m. Expected one of 
+[1m[[0m[32m'班級'[0m, [32m'count'[0m, [32m'percent'[0m[1m][0m but received: 百分比
+[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/[0m [31m [0m
+[31m [0m [1mexec_code.py[0m:129 in exec_func_with_error_handling                                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/[0m [31m [0m
+[31m [0m [1mscript_runner.py[0m:689 in code_to_exec                                                 [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/大一/[0m[1mapp.py[0m:456 in <module>                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m453 [0m[2m│   │   [0mcategory_orders[group] = [96msorted[0m(unique_group, key=[94mlambda[0m c: parse_clas [31m [0m
+[31m [0m   [2m454 [0m                                                                               [31m [0m
+[31m [0m   [2m455 [0m[94mif[0m group == [33m"[0m[33m(不分組)[0m[33m"[0m:                                                        [31m [0m
+[31m [0m [31m❱ [0m456 [2m│   [0mfig = [1;4mpx.bar(result, x=x_col, y=y, category_orders=category_orders [0m[1;4;94mif[0m[1;4m cate[0m [31m [0m
+[31m [0m   [2m457 [0m[2m│   [0mst.plotly_chart(fig, width=[33m"[0m[33mstretch[0m[33m"[0m)                                      [31m [0m
+[31m [0m   [2m458 [0m[2m│   [0mshow_table(result)                                                         [31m [0m
+[31m [0m   [2m459 [0m[94melse[0m:                                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_chart_types.py[0m: [31m [0m
+[31m [0m 381 in bar                                                                           [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 378 [0m[2;33m│   [0m[33mIn a bar plot, each row of `data_frame` is represented as a rectangular[0m   [31m [0m
+[31m [0m   [2m 379 [0m[2;33m│   [0m[33mmark.[0m                                                                     [31m [0m
+[31m [0m   [2m 380 [0m[2;33m│   [0m[33m"""[0m                                                                       [31m [0m
+[31m [0m [31m❱ [0m 381 [2m│   [0m[94mreturn[0m [1;4mmake_figure([0m                                                       [31m [0m
+[31m [0m   [2m 382 [0m[2m│   │   [0m[1;4margs=[0m[1;4;96mlocals[0m[1;4m(),[0m                                                        [31m [0m
+[31m [0m   [2m 383 [0m[2m│   │   [0m[1;4mconstructor=go.Bar,[0m                                                   [31m [0m
+[31m [0m   [2m 384 [0m[2m│   │   [0m[1;4mtrace_patch=[0m[1;4;96mdict[0m[1;4m(textposition=[0m[1;4;33m"[0m[1;4;33mauto[0m[1;4;33m"[0m[1;4m),[0m                                [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_core.py[0m:2511 in [31m [0m
+[31m [0m make_figure                                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m2508 [0m[2m│   [0mlayout_patch = layout_patch [95mor[0m {}                                         [31m [0m
+[31m [0m   [2m2509 [0m[2m│   [0mapply_default_cascade(args, constructor=constructor)                      [31m [0m
+[31m [0m   [2m2510 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m [31m❱ [0m2511 [2m│   [0margs = [1;4mbuild_dataframe(args, constructor)[0m                                 [31m [0m
+[31m [0m   [2m2512 [0m[2m│   [0m[94mif[0m constructor [95min[0m [go.Treemap, go.Sunburst, go.Icicle] [95mand[0m args[[33m"[0m[33mpath[0m[33m"[0m] [95mi[0m [31m [0m
+[31m [0m   [2m2513 [0m[2m│   │   [0margs = process_dataframe_hierarchy(args)                              [31m [0m
+[31m [0m   [2m2514 [0m[2m│   [0m[94mif[0m constructor [95min[0m [go.Pie]:                                               [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_core.py[0m:1757 in [31m [0m
+[31m [0m build_dataframe                                                                      [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1754 [0m[2m│   │   [0margs[[33m"[0m[33mcolor[0m[33m"[0m] = [94mNone[0m                                                  [31m [0m
+[31m [0m   [2m1755 [0m[2m│   [0m[2m# now that things have been prepped, we do the systematic rewriting of `a[0m [31m [0m
+[31m [0m   [2m1756 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m [31m❱ [0m1757 [2m│   [0mdf_output, wide_id_vars = [1;4mprocess_args_into_dataframe([0m                    [31m [0m
+[31m [0m   [2m1758 [0m[2m│   │   [0m[1;4margs,[0m                                                                 [31m [0m
+[31m [0m   [2m1759 [0m[2m│   │   [0m[1;4mwide_mode,[0m                                                            [31m [0m
+[31m [0m   [2m1760 [0m[2m│   │   [0m[1;4mvar_name,[0m                                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/plotly/express/[0m[1m_core.py[0m:1358 in [31m [0m
+[31m [0m process_args_into_dataframe                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1355 [0m[2m│   │   │   │   │   │   [0m)                                                     [31m [0m
+[31m [0m   [2m1356 [0m[2m│   │   │   │   │   │   [0m[94mif[0m argument == [33m"[0m[33mindex[0m[33m"[0m:                               [31m [0m
+[31m [0m   [2m1357 [0m[2m│   │   │   │   │   │   │   [0merr_msg += [33m"[0m[33m\n[0m[33m To use the index, pass it in direc[0m [31m [0m
+[31m [0m [31m❱ [0m1358 [2m│   │   │   │   │   │   [0m[1;4;94mraise[0m[1;4m [0m[1;4;96mValueError[0m[1;4m(err_msg)[0m                             [31m [0m
+[31m [0m   [2m1359 [0m[2m│   │   │   │   [0m[94melif[0m length [95mand[0m (actual_len := [96mlen[0m(df_input)) != length:      [31m [0m
+[31m [0m   [2m1360 [0m[2m│   │   │   │   │   [0m[94mraise[0m [96mValueError[0m(                                         [31m [0m
+[31m [0m   [2m1361 [0m[2m│   │   │   │   │   │   [0m[33m"[0m[33mAll arguments should have the same length. [0m[33m"[0m         [31m [0m
+[31m────────────────────────────────────────────────────────────────────────────────────────[0m
+[1;91mValueError: [0mValue of [32m'y'[0m is not the name of a column in [32m'data_frame'[0m. Expected one of 
+[1m[[0m[32m'班級'[0m, [32m'count'[0m, [32m'percent'[0m[1m][0m but received: 百分比
+/home/vender/大一/app.py:164: FutureWarning:
+
+DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+
+/home/vender/大一/app.py:164: FutureWarning:
+
+DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+
+/home/vender/大一/app.py:164: FutureWarning:
+
+DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+
+/home/vender/大一/app.py:164: FutureWarning:
+
+DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+
+[31m──[0m[31m────────────────────────[0m[31m [0m[1;31mTraceback [0m[1;2;31m(most recent call last)[0m[31m [0m[31m─────────────────────────[0m[31m──[0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/[0m [31m [0m
+[31m [0m [1mexec_code.py[0m:129 in exec_func_with_error_handling                                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/streamlit/runtime/scriptrunner/[0m [31m [0m
+[31m [0m [1mscript_runner.py[0m:689 in code_to_exec                                                 [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/大一/[0m[1mapp.py[0m:383 in <module>                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m380 [0m                                                                               [31m [0m
+[31m [0m   [2m381 [0m[2m# 若為學院/班級相關問題，先套用 normalization.py 提供的預設排序[0m                [31m [0m
+[31m [0m   [2m382 [0mgrouped = (group != [33m"[0m[33m(不分組)[0m[33m"[0m)                                                [31m [0m
+[31m [0m [31m❱ [0m383 result = [1;4msummarize([0m                                                            [31m [0m
+[31m [0m   [2m384 [0m[2m│   [0m[1;4mfiltered_df,[0m                                                               [31m [0m
+[31m [0m   [2m385 [0m[2m│   [0m[1;4mschema,[0m                                                                    [31m [0m
+[31m [0m   [2m386 [0m[2m│   [0m[1;4mq=q,[0m                                                                       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/大一/[0m[1mapp.py[0m:165 in summarize                                            [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m162 [0m[2m│   │   │   │   [0mout[[33m"[0m[33mpercent[0m[33m"[0m] = out[[33m"[0m[33mcount[0m[33m"[0m] / [96mmax[0m(total_resp, [94m1[0m) * [94m100[0m       [31m [0m
+[31m [0m   [2m163 [0m[2m│   │   │   [0m[94melif[0m is_ms:                                                        [31m [0m
+[31m [0m   [2m164 [0m[2m│   │   │   │   [0mn_resp = d.groupby(group).apply([94mlambda[0m g: g.index.nunique())   [31m [0m
+[31m [0m [31m❱ [0m165 [2m│   │   │   │   [0mout[[33m"[0m[33mpercent[0m[33m"[0m] = out[[33m"[0m[33mcount[0m[33m"[0m] / [1;4mout[group].map(n_resp)[0m * [94m100[0m   [31m [0m
+[31m [0m   [2m166 [0m[2m│   │   │   [0m[94melse[0m:                                                              [31m [0m
+[31m [0m   [2m167 [0m[2m│   │   │   │   [0m[2m# 單選題維持「各組加總=100%」[0m                                  [31m [0m
+[31m [0m   [2m168 [0m[2m│   │   │   │   [0mout[[33m"[0m[33mpercent[0m[33m"[0m] = out.groupby(group)[[33m"[0m[33mcount[0m[33m"[0m].transform([94mlambda[0m  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/[0m[1mseries.py[0m:4719 in   [31m [0m
+[31m [0m map                                                                                  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m4716 [0m[2;33m│   │   [0m[33m3  I am a rabbit[0m                                                      [31m [0m
+[31m [0m   [2m4717 [0m[2;33m│   │   [0m[33mdtype: object[0m                                                         [31m [0m
+[31m [0m   [2m4718 [0m[2;33m│   │   [0m[33m"""[0m                                                                   [31m [0m
+[31m [0m [31m❱ [0m4719 [2m│   │   [0mnew_values = [1;4;96mself[0m[1;4m._map_values(arg, na_action=na_action)[0m               [31m [0m
+[31m [0m   [2m4720 [0m[2m│   │   [0m[94mreturn[0m [96mself[0m._constructor(new_values, index=[96mself[0m.index, copy=[94mFalse[0m).__ [31m [0m
+[31m [0m   [2m4721 [0m[2m│   │   │   [0m[96mself[0m, method=[33m"[0m[33mmap[0m[33m"[0m                                                [31m [0m
+[31m [0m   [2m4722 [0m[2m│   │   [0m)                                                                     [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/[0m[1mbase.py[0m:923 in      [31m [0m
+[31m [0m _map_values                                                                          [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 920 [0m[2m│   │   [0marr = [96mself[0m._values                                                    [31m [0m
+[31m [0m   [2m 921 [0m[2m│   │   [0m                                                                      [31m [0m
+[31m [0m   [2m 922 [0m[2m│   │   [0m[94mif[0m [96misinstance[0m(arr, ExtensionArray):                                   [31m [0m
+[31m [0m [31m❱ [0m 923 [2m│   │   │   [0m[94mreturn[0m [1;4marr.map(mapper, na_action=na_action)[0m                       [31m [0m
+[31m [0m   [2m 924 [0m[2m│   │   [0m                                                                      [31m [0m
+[31m [0m   [2m 925 [0m[2m│   │   [0m[94mreturn[0m algorithms.map_array(arr, mapper, na_action=na_action, convert [31m [0m
+[31m [0m   [2m 926 [0m                                                                              [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/arrays/[0m[1mbase.py[0m:2322 [31m [0m
+[31m [0m in map                                                                               [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m2319 [0m[2;33m│   │   │   [0m[33mIf the function returns a tuple with more than one element[0m        [31m [0m
+[31m [0m   [2m2320 [0m[2;33m│   │   │   [0m[33ma MultiIndex will be returned.[0m                                    [31m [0m
+[31m [0m   [2m2321 [0m[2;33m│   │   [0m[33m"""[0m                                                                   [31m [0m
+[31m [0m [31m❱ [0m2322 [2m│   │   [0m[94mreturn[0m [1;4mmap_array([0m[1;4;96mself[0m[1;4m, mapper, na_action=na_action)[0m                   [31m [0m
+[31m [0m   [2m2323 [0m[2m│   [0m                                                                          [31m [0m
+[31m [0m   [2m2324 [0m[2m│   [0m[2m# -----------------------------------------------------------------------[0m [31m [0m
+[31m [0m   [2m2325 [0m[2m│   [0m[2m# GroupBy Methods[0m                                                         [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/[0m[1malgorithms.py[0m:1722  [31m [0m
+[31m [0m in map_array                                                                         [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m1719 [0m[2m│   │   │   [0m[94mfrom[0m[90m [0m[4;96mpandas[0m[90m [0m[94mimport[0m Series                                         [31m [0m
+[31m [0m   [2m1720 [0m[2m│   │   │   [0m                                                                  [31m [0m
+[31m [0m   [2m1721 [0m[2m│   │   │   [0m[94mif[0m [96mlen[0m(mapper) == [94m0[0m:                                              [31m [0m
+[31m [0m [31m❱ [0m1722 [2m│   │   │   │   [0mmapper = [1;4mSeries(mapper, dtype=np.float64)[0m                     [31m [0m
+[31m [0m   [2m1723 [0m[2m│   │   │   [0m[94melse[0m:                                                             [31m [0m
+[31m [0m   [2m1724 [0m[2m│   │   │   │   [0mmapper = Series(mapper)                                       [31m [0m
+[31m [0m   [2m1725 [0m                                                                              [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/[0m[1mseries.py[0m:587 in    [31m [0m
+[31m [0m __init__                                                                             [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m 584 [0m[2m│   │   │   [0m[94melif[0m copy:                                                        [31m [0m
+[31m [0m   [2m 585 [0m[2m│   │   │   │   [0mdata = data.copy()                                            [31m [0m
+[31m [0m   [2m 586 [0m[2m│   │   [0m[94melse[0m:                                                                 [31m [0m
+[31m [0m [31m❱ [0m 587 [2m│   │   │   [0mdata = [1;4msanitize_array(data, index, dtype, copy)[0m                   [31m [0m
+[31m [0m   [2m 588 [0m[2m│   │   │   [0m                                                                  [31m [0m
+[31m [0m   [2m 589 [0m[2m│   │   │   [0mmanager = _get_option([33m"[0m[33mmode.data_manager[0m[33m"[0m, silent=[94mTrue[0m)           [31m [0m
+[31m [0m   [2m 590 [0m[2m│   │   │   [0m[94mif[0m manager == [33m"[0m[33mblock[0m[33m"[0m:                                            [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/[0m[1mconstruction.py[0m:630 [31m [0m
+[31m [0m in sanitize_array                                                                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m627 [0m[2m│   │   │   [0mdata = np.asarray(data)                                            [31m [0m
+[31m [0m   [2m628 [0m[2m│   │   [0m[94melse[0m:                                                                  [31m [0m
+[31m [0m   [2m629 [0m[2m│   │   │   [0mdata = np.array(data, copy=copy)                                   [31m [0m
+[31m [0m [31m❱ [0m630 [2m│   │   [0m[94mreturn[0m [1;4msanitize_array([0m                                                 [31m [0m
+[31m [0m   [2m631 [0m[2m│   │   │   [0m[1;4mdata,[0m                                                              [31m [0m
+[31m [0m   [2m632 [0m[2m│   │   │   [0m[1;4mindex=index,[0m                                                       [31m [0m
+[31m [0m   [2m633 [0m[2m│   │   │   [0m[1;4mdtype=dtype,[0m                                                       [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/[0m[1mconstruction.py[0m:656 [31m [0m
+[31m [0m in sanitize_array                                                                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m653 [0m[2m│   │   │   │   [0msubarr = cast(np.ndarray, subarr)                              [31m [0m
+[31m [0m   [2m654 [0m[2m│   │   │   │   [0msubarr = maybe_infer_to_datetimelike(subarr)                   [31m [0m
+[31m [0m   [2m655 [0m[2m│   [0m                                                                           [31m [0m
+[31m [0m [31m❱ [0m656 [2m│   [0msubarr = [1;4m_sanitize_ndim(subarr, data, dtype, index, allow_2d=allow_2d)[0m     [31m [0m
+[31m [0m   [2m657 [0m[2m│   [0m                                                                           [31m [0m
+[31m [0m   [2m658 [0m[2m│   [0m[94mif[0m [96misinstance[0m(subarr, np.ndarray):                                         [31m [0m
+[31m [0m   [2m659 [0m[2m│   │   [0m[2m# at this point we should have dtype be None or subarr.dtype == dtype[0m  [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m [2m/home/vender/miniconda3/lib/python3.13/site-packages/pandas/core/[0m[1mconstruction.py[0m:715 [31m [0m
+[31m [0m in _sanitize_ndim                                                                    [31m [0m
+[31m [0m                                                                                      [31m [0m
+[31m [0m   [2m712 [0m[2m│   │   [0m[94mif[0m [96misinstance[0m(data, np.ndarray):                                       [31m [0m
+[31m [0m   [2m713 [0m[2m│   │   │   [0m[94mif[0m allow_2d:                                                       [31m [0m
+[31m [0m   [2m714 [0m[2m│   │   │   │   [0m[94mreturn[0m result                                                  [31m [0m
+[31m [0m [31m❱ [0m715 [2m│   │   │   [0m[1;4;94mraise[0m[1;4m [0m[1;4;96mValueError[0m[1;4m([0m                                                  [31m [0m
+[31m [0m   [2m716 [0m[2m│   │   │   │   [0m[1;4;33mf[0m[1;4;33m"[0m[1;4;33mData must be 1-dimensional, got ndarray of shape [0m[1;4;33m{[0m[1;4mdata.shape[0m [31m [0m
+[31m [0m   [2m717 [0m[2m│   │   │   [0m[1;4m)[0m                                                                  [31m [0m
+[31m [0m   [2m718 [0m[2m│   │   [0m[94mif[0m is_object_dtype(dtype) [95mand[0m [96misinstance[0m(dtype, ExtensionDtype):       [31m [0m
+[31m────────────────────────────────────────────────────────────────────────────────────────[0m
+[1;91mValueError: [0mData must be [1;36m1[0m-dimensional, got ndarray of shape [1m([0m[1;36m0[0m, [1;36m436[0m[1m)[0m instead
+/home/vender/大一/app.py:164: FutureWarning:
+
+DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+

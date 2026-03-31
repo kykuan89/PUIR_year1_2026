@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 import pandas as pd
 import streamlit as st
 import plotly.express as px
@@ -15,6 +16,7 @@ from normalization import (
 
 FILE_PATH = "114學年度填答總表_含班級學號12102025_去識別化.xlsx"
 SHEET = "1210-已填總表"
+HELP_DOC_PATH = Path(__file__).with_name("說明文件.txt")
 
 # ---------- Data loading ----------
 @st.cache_data
@@ -121,7 +123,14 @@ def split_multiselect(series: pd.Series) -> pd.Series:
     parts = s.str.split(r"\s*[;；,、]\s*", regex=True)
     return parts.explode().str.strip()
 
-def summarize(df: pd.DataFrame, schema: dict, q: str, group: str | None, as_percent: bool) -> pd.DataFrame:
+def summarize(
+    df: pd.DataFrame,
+    schema: dict,
+    q: str,
+    group: str | None,
+    as_percent: bool,
+    pct_mode: str | None = None,
+) -> pd.DataFrame:
     q_use = q + "__cat" if (q + "__cat") in df.columns else q
     d = df.copy()
 
@@ -150,7 +159,10 @@ def summarize(df: pd.DataFrame, schema: dict, q: str, group: str | None, as_perc
         out.columns = [group, q_use, "count"]
 
         if as_percent:
-            if is_ms:
+            if pct_mode == "全體百分比":
+                total_resp = d.index.nunique() if is_ms else len(d)
+                out["percent"] = out["count"] / max(total_resp, 1) * 100
+            elif is_ms:
                 n_resp = d.groupby(group).apply(lambda g: g.index.nunique())
                 out["percent"] = out["count"] / out[group].map(n_resp) * 100
             else:
@@ -163,7 +175,7 @@ def summarize(df: pd.DataFrame, schema: dict, q: str, group: str | None, as_perc
 
         if as_percent:
             if is_ms:
-                # ✅ 不分組：分母用作答人數
+                # 不分組：分母用作答人數
                 n_resp = d.index.nunique()
                 vc["percent"] = vc["count"] / n_resp * 100
             else:
@@ -227,9 +239,109 @@ def parse_class_key(class_name: str, college_order=None):
     return (college_rank, text, 0, "")
 
 
+def get_percent_column_label(pct_mode: str | None, group_label: str) -> str:
+    if pct_mode == "全體：圖示全體=100%":
+        return "百分比（全體=100%）"
+    if group_label != "(不分組)":
+        return "百分比（各組=100%）"
+    return "百分比"
+
+
+def normalize_display_table(df: pd.DataFrame, percent_col_label: str = "百分比") -> pd.DataFrame:
+    out = df.copy()
+    if "option" in out.columns:
+        out = out.rename(columns={"option": "選項"})
+    if "count" in out.columns:
+        out = out.rename(columns={"count": "人數"})
+    if "percent" in out.columns:
+        out = out.rename(columns={"percent": percent_col_label})
+        out[percent_col_label] = out[percent_col_label].astype(float).round(2).map(lambda x: f"{x:.2f}%")
+    return out
+
+
+def show_table(df: pd.DataFrame, percent_col_label: str = "百分比", **kwargs):
+    st.dataframe(normalize_display_table(df, percent_col_label=percent_col_label), hide_index=True, width="stretch", **kwargs)
+
+
+def show_table_caption(text: str):
+    st.markdown(
+        f"<div style='font-size: 1rem; color: #111111; margin: 0.25rem 0 0.5rem 0;'>{text}</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def is_groupable_column(df: pd.DataFrame, schema: dict, col: str) -> bool:
+    if col not in df.columns:
+        return False
+
+    excluded = {"已填人", "開始時間", "完成時間", "上次修改時間", "填答時間", "學號", "姓名", "Email", "班級前綴"}
+    if col in excluded:
+        return False
+
+    if schema.get(col, {}).get("type") == "multiselect":
+        return False
+
+    s = df[col].dropna().astype(str).str.strip()
+    s = s[s != ""]
+    if s.empty:
+        return False
+
+    unique_count = s.nunique()
+    sample_size = len(s)
+
+    # 避免把高基數欄位（近似自由填答/識別欄）塞進分組清單。
+    if unique_count <= min(30, max(12, int(sample_size * 0.2))):
+        return True
+
+    return col in {"學院", "班級"}
+
+
+def build_population_text(selected_colleges: list[str], selected_classes: list[str]) -> str:
+    parts = []
+    if selected_colleges:
+        parts.append("、".join(selected_colleges))
+    if selected_classes:
+        parts.append("、".join(selected_classes))
+    return "；".join(parts)
+
+
+def build_table_caption(
+    question_label: str,
+    group_label: str,
+    selected_colleges: list[str],
+    selected_classes: list[str],
+) -> str:
+    population_text = build_population_text(selected_colleges, selected_classes)
+    grouped = group_label != "(不分組)"
+    filtered = bool(selected_colleges or selected_classes)
+
+    if grouped and filtered:
+        return f"{question_label}依{group_label}篩選在{population_text}統計"
+    if grouped:
+        return f"{question_label}依{group_label}的全校統計"
+    if filtered:
+        return f"{question_label}在{population_text}的統計"
+    return f"{question_label}的全校統計"
+
+
+def load_help_document(path: Path = HELP_DOC_PATH) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return "尚未建立說明文件。"
+
+
 # ---------- UI ----------
 st.set_page_config(page_title="115學年度大一新生學習適應性分析", layout="wide")
 st.title("115學年度大一新生學習適應性分析")
+
+if "show_help_doc" not in st.session_state:
+    st.session_state.show_help_doc = False
+
+if st.session_state.show_help_doc:
+    st.subheader("說明文件")
+    st.text(load_help_document())
+    st.divider()
 
 df, schema = load_data(FILE_PATH)
 
@@ -247,46 +359,77 @@ all_questions = [
 ]
 
 default_groups = ["(不分組)"]
-candidate_groups = [
-    c for c in [
-        "性別",
-        "身分別",
-        "學院",         
-        "班級",
-        "原畢業學校之類型",
-        "原畢業學校所在地區",
-    ]
-    if c in df.columns
+preferred_group_order = [
+    "性別",
+    "身分別",
+    "學院",
+    "班級",
+    "原畢業學校之類型",
+    "原畢業學校所在地區",
 ]
-group_options = default_groups + candidate_groups
+candidate_groups = [c for c in preferred_group_order if c in df.columns and is_groupable_column(df, schema, c)]
+
+extra_group_candidates = [
+    c for c in all_questions
+    if c not in candidate_groups and is_groupable_column(df, schema, c)
+]
+
+group_options = default_groups + candidate_groups + extra_group_candidates
 
 with st.sidebar:
-    st.header("設定")
-    q = st.selectbox("選擇題目欄位", all_questions)
-    group = st.selectbox("分組比較", group_options)
-    as_percent = st.checkbox("顯示百分比 (%)", value=True)
+    st.header("分析設定")
+    q = st.selectbox("問卷題目（圖表類別）", all_questions)
+    available_group_options = [opt for opt in group_options if opt == "(不分組)" or opt != q]
+    group = st.selectbox("分組比較（群組標籤）", available_group_options)
+
+    st.divider()
 
     # 母體篩選：學院、班級 可複選
     population_attrs = st.multiselect(
-        "母體欄位（可複選，留空即全校）", 
+        "學院、班級篩選（可複選交叉比對或留空表示全校）", 
         ["學院", "班級"],
-        default=[]
+        default=[],
+        placeholder="不篩選(全校)",
     )
 
     selected_colleges = []
     selected_classes = []
     if "學院" in population_attrs and "學院" in df.columns:
+        college_values = [x for x in college_order if x in df["學院"].dropna().astype(str).unique()]
+        extras = [x for x in sorted(df["學院"].dropna().astype(str).unique()) if x not in college_values]
         selected_colleges = st.multiselect(
             "選取學院（可多選）",
-            sorted(df["學院"].dropna().astype(str).unique()),
-            default=[]
+            college_values + extras,
+            default=[],
+            placeholder="不篩選(全校)",
         )
     if "班級" in population_attrs and "班級" in df.columns:
+        class_values = df["班級"].dropna().astype(str).unique()
+        class_ordered = sorted(class_values, key=lambda c: parse_class_key(c, college_order))
         selected_classes = st.multiselect(
             "選取班級（可多選）",
-            sorted(df["班級"].dropna().astype(str).unique()),
-            default=[]
+            class_ordered,
+            default=[],
+            placeholder="不篩選(全校)",
         )
+
+    st.divider()
+
+    as_percent = st.checkbox("顯示百分比 (%)", value=True)
+
+    if as_percent:
+        pct_mode = st.radio(
+            "百分比母體",
+            ["全體：圖示全體=100%", "分組百分比：各組各自總和=100%"],
+            index=1,
+        )
+    else:
+        pct_mode = None
+
+    st.divider()
+    if st.button("說明文件", use_container_width=True):
+        st.session_state.show_help_doc = not st.session_state.show_help_doc
+    st.caption(f"文件：{HELP_DOC_PATH.name}")
 
 # Apply population filter (母體)：符合任一選項
 mask = pd.Series(True, index=df.index)
@@ -305,10 +448,17 @@ filtered_df = df[mask]
 if filtered_df.empty:
     st.warning("母體篩選後無資料，請調整學院 / 班級選擇。")
 
-result = summarize(filtered_df, schema, q=q, group=None if group == "(不分組)" else group, as_percent=as_percent)
-
 # 若為學院/班級相關問題，先套用 normalization.py 提供的預設排序
 grouped = (group != "(不分組)")
+result = summarize(
+    filtered_df,
+    schema,
+    q=q,
+    group=None if group == "(不分組)" else group,
+    as_percent=as_percent,
+    pct_mode=pct_mode,
+)
+
 if grouped:
     x_col = result.columns[1]
     group_col = result.columns[0]
@@ -323,7 +473,9 @@ if grouped and group_col in ["學院", "班級"]:
     result = apply_normalized_order(result, group_col, college_order)
 
 q_base = q.replace("__cat", "").replace("__num", "")
-st.subheader(f"題目：{q_base}")
+table_caption = build_table_caption(q_base, group, selected_colleges, selected_classes)
+percent_col_label = get_percent_column_label(pct_mode, group)
+st.divider()
 
 # ---- 顯示 Likert 平均與標準差（只要有 1~5 就顯示）----
 num_col = f"{q_base}__num"
@@ -383,12 +535,8 @@ if num_col in df.columns:
         else:
             st.write("未選擇母體篩選或未有選值，篩選後統計與全校相同。")
 
-#st.write("schema type:", schema.get(q))
-#st.write("norm col exists:", q + "_norm" in df.columns)
-if q + "_norm" in df.columns:
-    st.write(df[q + "_norm"].explode().value_counts().head(30))
-
 y = "percent" if as_percent else "count"
+y_axis_label = "百分比(%)" if as_percent else "人數"
 
 category_orders = {}
 if x_col in ["學院", "班級"]:
@@ -405,22 +553,29 @@ if grouped and group in ["學院", "班級"]:
         unique_group = result[group].dropna().astype(str).unique()
         category_orders[group] = sorted(unique_group, key=lambda c: parse_class_key(c, college_order))
 
-display_result = result.copy()
-if "count" in display_result.columns:
-    display_result = display_result.rename(columns={"count": "人數"})
-if "percent" in display_result.columns:
-    display_result = display_result.rename(columns={"percent": "百分比"})
-    display_result["百分比"] = display_result["百分比"].astype(float).round(2).map(lambda x: f"{x:.2f}%")
-
 if group == "(不分組)":
     fig = px.bar(result, x=x_col, y=y, category_orders=category_orders if category_orders else None)
+    fig.update_yaxes(title=y_axis_label)
     st.plotly_chart(fig, width="stretch")
-    st.dataframe(display_result)
+    show_table_caption(table_caption)
+    show_table(result, percent_col_label=percent_col_label)
 else:
     # 分組時 result 欄位順序是: [group, q_use, count, (percent)]
-    fig = px.bar(result, x=x_col, y=y, color=group, barmode="group", category_orders=category_orders if category_orders else None)
+    compact_mode = (x_col == "班級" and group == "學院")
+    fig = px.bar(
+        result,
+        x=x_col,
+        y=y,
+        color=group,
+        barmode="stack" if compact_mode else "group",
+        category_orders=category_orders if category_orders else None,
+    )
+    if compact_mode:
+        fig.update_layout(bargap=0.12, bargroupgap=0)
+    fig.update_yaxes(title=y_axis_label)
     st.plotly_chart(fig, width="stretch")
-    st.dataframe(display_result)
+    show_table_caption(table_caption)
+    show_table(result, percent_col_label=percent_col_label)
 
 
 
