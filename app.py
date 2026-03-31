@@ -4,14 +4,15 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from normalization import (
+    COLLEGE_ORDER,
+    PREFIX_ORDER,
     infer_question_type,
     normalize_column_single,
     normalize_multiselect_cell,
     NORMALIZE_MAP,
     parse_likert_1to5_unknown6,
     add_college_column,
-    infer_college_from_class,
-    PREFIX_TO_COLLEGE
+    get_class_info,
 )
 
 FILE_PATH = "114學年度填答總表_含班級學號12102025_去識別化.xlsx"
@@ -218,25 +219,25 @@ def apply_normalized_order(result: pd.DataFrame, col: str, college_order, class_
 
 
 def parse_class_key(class_name: str, college_order=None):
-    import re
     text = str(class_name or "").strip()
     if not text:
-        return (len(college_order) if college_order is not None else 999, "", 0, "")
+        return (len(college_order) if college_order is not None else 999, len(PREFIX_ORDER), "", 0, "")
 
-    # 依照 normalization.py 順序: 先學院，再年級，最後班別
-    college = infer_college_from_class(text) or "未分類"
+    info = get_class_info(text)
+    college = info["college"]
+    prefix = info["prefix"]
     college_rank = college_order.index(college) if college_order and college in college_order else (len(college_order) if college_order else 999)
+    prefix_rank = PREFIX_ORDER.index(prefix) if prefix in PREFIX_ORDER else len(PREFIX_ORDER)
 
-    m = re.match(r'^(.+?)([一二三123])([A-Za-z])$', text)
+    m = re.search(r'([一二三四1234])(?:年級)?\s*([A-Za-z])(?:班)?$', text)
     if m:
-        prefix = m.group(1)
-        year_str = m.group(2)
-        class_str = m.group(3)
-        year_num = {'一': 1, '二': 2, '三': 3, '1': 1, '2': 2, '3': 3}.get(year_str, 0)
-        return (college_rank, prefix, year_num, class_str)
+        year_str = m.group(1)
+        class_str = m.group(2)
+        year_num = {'一': 1, '二': 2, '三': 3, '四': 4, '1': 1, '2': 2, '3': 3, '4': 4}.get(year_str, 0)
+        return (college_rank, prefix_rank, prefix, year_num, class_str)
 
     # 無法解析年級/班別時先依校院、再字串排序
-    return (college_rank, text, 0, "")
+    return (college_rank, prefix_rank, prefix, 0, text)
 
 
 def get_percent_column_label(pct_mode: str | None, group_label: str) -> str:
@@ -347,8 +348,8 @@ df, schema = load_data(FILE_PATH)
 
 df = add_college_column(df)
 
-# 根據 normalization.py 的 PREFIX_TO_COLLEGE，取出學院預設順序（出現順序保留）
-college_order = list(dict.fromkeys(PREFIX_TO_COLLEGE.values()))
+# 根據 normalization.py 的註解順序固定學院/學系前綴排序
+college_order = COLLEGE_ORDER
 
 all_questions = [
     c for c in df.columns

@@ -56,84 +56,135 @@ GROUP_TO_CLASSES = {
     "不分系": ["學院不分系", "不分系", "工程不分系", "藝術不分系", "電資不分系", "商管不分系", "理學不分系"],
 }
 
-PREFIX_TO_COLLEGE = {
-    # 外語學院
-    "英": "外語學院",
-    "日": "外語學院",
-    "西": "外語學院",
+PROGRAM_SPECS = [
+    ("外語學院", "英文系", "英", ["英文"]),
+    ("外語學院", "日文系", "日", ["日文"]),
+    ("外語學院", "西文系", "西", ["西文"]),
+    ("人文暨社會科學學院", "中文系", "中", ["中文"]),
+    ("人文暨社會科學學院", "社工系", "社工", []),
+    ("人文暨社會科學學院", "台文系", "台文", []),
+    ("人文暨社會科學學院", "法律系", "法律", []),
+    ("人文暨社會科學學院", "大傳系", "大傳", []),
+    ("人文暨社會科學學院", "生態系", "生態", []),
+    ("人文暨社會科學學院", "法律原住民專班", "法律原專", []),
+    ("人文暨社會科學學院", "社工原住民專班", "社工原專", []),
+    ("理學院", "財工系", "財工", []),
+    ("理學院", "應化系", "應化", []),
+    ("理學院", "食營系", "食營", []),
+    ("理學院", "化科系", "化科", []),
+    ("理學院", "永續環境與智慧科技學士學位學程", "永續", ["永續智慧"]),
+    ("管理學院", "行銷與數位經營學系", "行銷", ["行銷與數位經營"]),
+    ("管理學院", "國企系", "國企", []),
+    ("管理學院", "會計系", "會計", []),
+    ("管理學院", "觀光系", "觀光", []),
+    ("管理學院", "財金系", "財金", []),
+    ("資訊學院", "資管系", "資管", []),
+    ("資訊學院", "資工系", "資工", []),
+    ("資訊學院", "人工智慧系", "人工智慧", []),
+    ("資訊學院", "資科系", "資科", []),
+    ("國際學院", "國際資訊學士學位學程", "國際", ["國際資訊"]),
+    ("國際學院", "寰宇外語教育學士學位學程", "寰宇外語", ["寰宇外語教育"]),
+    ("國際學院", "寰宇管理學士學位學程", "寰宇管理", ["寰宇管理學程"]),
+]
 
-    # 人文暨社會科學學院
-    "中": "人文暨社會科學學院",
-    "大傳": "人文暨社會科學學院",          # 大眾傳播（你資料用大傳）
-    "台文": "人文暨社會科學學院",          # 臺灣文學
-    "法律": "人文暨社會科學學院",
-    "社工": "人文暨社會科學學院",
-    "社工原專": "人文暨社會科學學院",
-    "犯防": "人文暨社會科學學院",
-    "犯防原專": "人文暨社會科學學院",
-    "生態": "人文暨社會科學學院",          # 依你截圖：生態也出現在法律/社工附近，先放人社；若你校內其實屬理學院再改這行
+COLLEGE_ORDER = list(dict.fromkeys(college for college, _, _, _ in PROGRAM_SPECS))
+DEPARTMENT_ORDER = [department for _, department, _, _ in PROGRAM_SPECS]
+PREFIX_ORDER = [prefix for _, _, prefix, _ in PROGRAM_SPECS]
+PREFIX_TO_COLLEGE = {prefix: college for college, _, prefix, _ in PROGRAM_SPECS}
+PREFIX_TO_DEPARTMENT = {prefix: department for _, department, prefix, _ in PROGRAM_SPECS}
 
-    # 理學院
-    "食營": "理學院",
-    "應化": "理學院",
-    "化科": "理學院",                      # 你資料有 化科一A/化科一B
-    "財工": "理學院",                      # 財務工程（你資料用財工）
-    "永續智慧": "理學院",                  # 你資料有 永續智慧一A（若校內其實歸國際/其他學院，再改）
+_MATCH_RULES = []
+for college, department, prefix, aliases in PROGRAM_SPECS:
+    for alias in [prefix, department, *aliases]:
+        _MATCH_RULES.append((alias, college, department, prefix))
 
-    # 管理學院
-    "國企": "管理學院",
-    "行銷與數位經營": "管理學院",
-    "會計": "管理學院",
-    "財金": "管理學院",
-    "觀光": "管理學院",
-    "經管進": "管理學院",                  # 你資料有 經管進一A（推測：經營管理進修？）
+for alias, college, department, prefix in [
+    ("犯防原專", "人文暨社會科學學院", "犯罪防治原住民專班", "犯防原專"),
+    ("犯防", "人文暨社會科學學院", "犯罪防治學系", "犯防"),
+    ("經管進", "管理學院", "經營管理進修學士班", "經管進"),
+    ("智慧媒體學程", "資訊學院", "智慧媒體學程", "智慧媒體學程"),
+    ("晶片設計", "資訊學院", "晶片設計學程", "晶片設計"),
+]:
+    PREFIX_TO_COLLEGE[alias] = college
+    PREFIX_TO_DEPARTMENT[alias] = department
+    _MATCH_RULES.append((alias, college, department, prefix))
 
-    # 資訊學院
-    "資管": "資訊學院",
-    "資工": "資訊學院",
-    "資科": "資訊學院",
-    "人工智慧": "資訊學院",
-    "智慧媒體學程": "資訊學院",
-    "晶片設計": "資訊學院",                # 你資料有 晶片設計一A（若校內歸工學/理學請改）
-    "國際資訊學士學位學程": "資訊學院",
+_MATCH_RULES.sort(key=lambda row: len(row[0]), reverse=True)
 
-    # 國際學院
-    "寰宇管理學程": "國際學院",
-    "寰宇外語教育": "國際學院",
-}
 
-_PREFIX_RE = re.compile(r"^(?P<prefix>.+?)(?=[一二三四五六七八九十])")
+def _normalize_class_name(class_name: str) -> str:
+    s = str(class_name).strip()
+    if not s or s.lower() == "nan":
+        return ""
+
+    s = re.sub(r"(?:[一二三四五六七八九十]|[1-9])\s*[A-Z]?$", "", s)
+    return s.strip()
+
 
 def extract_class_prefix(class_name: str) -> str | None:
-    if pd.isna(class_name):
-        return None
-    s = str(class_name).strip()
-    m = _PREFIX_RE.search(s)
-    return m.group("prefix") if m else None
+    base = _normalize_class_name(class_name)
+    return base or None
+
+
+def get_class_info(class_name: str, unknown: str = "未分類") -> dict:
+    base = _normalize_class_name(class_name)
+    if not base:
+        return {"prefix": unknown, "department": unknown, "college": unknown}
+
+    for alias, college, department, prefix in _MATCH_RULES:
+        if base.startswith(alias):
+            return {"prefix": prefix, "department": department, "college": college}
+
+    return {"prefix": base, "department": unknown, "college": unknown}
+
 
 def infer_college_from_class(class_name: str) -> str | None:
-    prefix = extract_class_prefix(class_name)
-    if not prefix:
-        return None
+    info = get_class_info(class_name)
+    return None if info["college"] == "未分類" else info["college"]
 
-    # 先做完全命中（長字優先）
-    for k in sorted(PREFIX_TO_COLLEGE.keys(), key=len, reverse=True):
-        if prefix == k:
-            return PREFIX_TO_COLLEGE[k]
 
-    # 再做開頭命中（救少數異常）
-    for k in sorted(PREFIX_TO_COLLEGE.keys(), key=len, reverse=True):
-        if prefix.startswith(k):
-            return PREFIX_TO_COLLEGE[k]
-
-    return None
-
-def add_college_column(df: pd.DataFrame, class_col: str = "班級",
-                       out_col: str = "學院", prefix_col: str = "班級前綴") -> pd.DataFrame:
+def add_prefix_column(
+    df: pd.DataFrame,
+    class_col: str = "班級",
+    out_col: str = "前綴",
+    unknown: str = "未分類",
+) -> pd.DataFrame:
     if class_col not in df.columns:
         return df
-    df[prefix_col] = df[class_col].apply(extract_class_prefix)
-    df[out_col] = df[class_col].apply(infer_college_from_class)
+
+    df[out_col] = df[class_col].apply(lambda x: get_class_info(x, unknown=unknown)["prefix"])
+    return df
+
+
+def add_department_column(
+    df: pd.DataFrame,
+    class_col: str = "班級",
+    out_col: str = "學系",
+    unknown: str = "未分類",
+) -> pd.DataFrame:
+    if class_col not in df.columns:
+        return df
+
+    df[out_col] = df[class_col].apply(lambda x: get_class_info(x, unknown=unknown)["department"])
+    return df
+
+
+def add_college_column(
+    df: pd.DataFrame,
+    class_col: str = "班級",
+    out_col: str = "學院",
+    prefix_col: str = "班級前綴",
+    prefix_to_college: dict = None,
+    unknown: str = "未分類",
+) -> pd.DataFrame:
+    if class_col not in df.columns:
+        return df
+
+    if prefix_to_college is None:
+        prefix_to_college = PREFIX_TO_COLLEGE
+
+    df[prefix_col] = df[class_col].apply(lambda x: get_class_info(x, unknown=unknown)["prefix"])
+    df[out_col] = df[class_col].apply(lambda x: get_class_info(x, unknown=unknown)["college"])
     return df
 
 # 反向：keyword(學類/常見系名) -> 學群
