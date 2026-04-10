@@ -351,9 +351,11 @@ df = add_college_column(df)
 # 根據 normalization.py 的註解順序固定學院/學系前綴排序
 college_order = COLLEGE_ORDER
 
+question_excluded = {"已填人", "完成時間", "班級前綴", "學院"}
+
 all_questions = [
     c for c in df.columns
-    if c not in ["已填人"]
+    if c not in question_excluded
     and not c.endswith("__num")
     and not c.endswith("__cat")
     and not c.endswith("_norm")
