@@ -5,6 +5,7 @@ import streamlit as st
 import plotly.express as px
 from normalization import (
     COLLEGE_ORDER,
+    DEPARTMENT_ORDER,
     PREFIX_ORDER,
     infer_question_type,
     normalize_column_single,
@@ -12,6 +13,7 @@ from normalization import (
     NORMALIZE_MAP,
     parse_likert_1to5_unknown6,
     add_college_column,
+    add_department_column,
     get_class_info,
 )
 
@@ -134,6 +136,7 @@ def summarize(
 ) -> pd.DataFrame:
     q_use = q + "__cat" if (q + "__cat") in df.columns else q
     d = df.copy()
+    d["_resp_id"] = d.index
 
     is_ms = (schema.get(q, {}).get("type") == "multiselect")
 
@@ -155,16 +158,22 @@ def summarize(
     if group and group != "(不分組)":
         d = d[d[group].notna() & (d[group].astype(str).str.strip() != "")]
 
-        ct = pd.crosstab(d[group], d[q_use])
+        # crosstab 先使用重設索引的序列，避免 explode 後重複 index 造成 reindex 錯誤。
+        row_series = d[group].reset_index(drop=True)
+        col_series = d[q_use].reset_index(drop=True)
+        ct = pd.crosstab(row_series, col_series)
+        ct.index.name = group
+        ct.columns.name = q_use
+
         out = ct.stack().reset_index()
         out.columns = [group, q_use, "count"]
 
         if as_percent:
-            if pct_mode == "全體百分比":
+            if pct_mode == "overall":
                 total_resp = d.index.nunique() if is_ms else len(d)
                 out["percent"] = out["count"] / max(total_resp, 1) * 100
             elif is_ms:
-                n_resp = d.groupby(group).apply(lambda g: g.index.nunique())
+                n_resp = d.groupby(group)["_resp_id"].nunique()
                 out["percent"] = out["count"] / out[group].map(n_resp) * 100
             else:
                 # 單選題維持「各組加總=100%」
@@ -177,7 +186,7 @@ def summarize(
         if as_percent:
             if is_ms:
                 # 不分組：分母用作答人數
-                n_resp = d.index.nunique()
+                n_resp = d["_resp_id"].nunique()
                 vc["percent"] = vc["count"] / n_resp * 100
             else:
                 vc["percent"] = vc["count"] / vc["count"].sum() * 100
@@ -198,12 +207,21 @@ def get_plot_series(df, schema, q):
     return df[q].astype("string")
 
 
-def apply_normalized_order(result: pd.DataFrame, col: str, college_order, class_order=None):
+def apply_normalized_order(result: pd.DataFrame, col: str, college_order, department_order=None, class_order=None):
     if col not in result.columns:
         return result
 
     if col == "學院":
-        order = college_order
+        unique_colleges = result[col].dropna().astype(str).unique()
+        preferred = [c for c in college_order if c in unique_colleges]
+        extras = sorted([c for c in unique_colleges if c not in preferred])
+        order = preferred + extras
+    elif col == "系":
+        unique_departments = result[col].dropna().astype(str).unique()
+        base_order = department_order if department_order is not None else DEPARTMENT_ORDER
+        preferred = [d for d in base_order if d in unique_departments]
+        extras = sorted([d for d in unique_departments if d not in preferred])
+        order = preferred + extras
     elif col == "班級":
         if class_order is None:
             unique_classes = result[col].dropna().astype(str).unique()
@@ -241,7 +259,7 @@ def parse_class_key(class_name: str, college_order=None):
 
 
 def get_percent_column_label(pct_mode: str | None, group_label: str) -> str:
-    if pct_mode == "全體：圖示全體=100%":
+    if pct_mode == "overall":
         return "百分比（全體=100%）"
     if group_label != "(不分組)":
         return "百分比（各組=100%）"
@@ -294,13 +312,15 @@ def is_groupable_column(df: pd.DataFrame, schema: dict, col: str) -> bool:
     if unique_count <= min(30, max(12, int(sample_size * 0.2))):
         return True
 
-    return col in {"學院", "班級"}
+    return col in {"學院", "系", "班級"}
 
 
-def build_population_text(selected_colleges: list[str], selected_classes: list[str]) -> str:
+def build_population_text(selected_colleges: list[str], selected_departments: list[str], selected_classes: list[str]) -> str:
     parts = []
     if selected_colleges:
         parts.append("、".join(selected_colleges))
+    if selected_departments:
+        parts.append("、".join(selected_departments))
     if selected_classes:
         parts.append("、".join(selected_classes))
     return "；".join(parts)
@@ -310,11 +330,12 @@ def build_table_caption(
     question_label: str,
     group_label: str,
     selected_colleges: list[str],
+    selected_departments: list[str],
     selected_classes: list[str],
 ) -> str:
-    population_text = build_population_text(selected_colleges, selected_classes)
+    population_text = build_population_text(selected_colleges, selected_departments, selected_classes)
     grouped = group_label != "(不分組)"
-    filtered = bool(selected_colleges or selected_classes)
+    filtered = bool(selected_colleges or selected_departments or selected_classes)
 
     if grouped and filtered:
         return f"{question_label}依{group_label}篩選在{population_text}統計"
@@ -347,11 +368,12 @@ if st.session_state.show_help_doc:
 df, schema = load_data(FILE_PATH)
 
 df = add_college_column(df)
+df = add_department_column(df, out_col="系")
 
 # 根據 normalization.py 的註解順序固定學院/學系前綴排序
 college_order = COLLEGE_ORDER
 
-question_excluded = {"已填人", "完成時間", "班級前綴", "學院"}
+question_excluded = {"已填人", "完成時間", "班級前綴", "學院", "系"}
 
 all_questions = [
     c for c in df.columns
@@ -366,6 +388,7 @@ preferred_group_order = [
     "性別",
     "身分別",
     "學院",
+    "系",
     "班級",
     "原畢業學校之類型",
     "原畢業學校所在地區",
@@ -387,15 +410,16 @@ with st.sidebar:
 
     st.divider()
 
-    # 母體篩選：學院、班級 可複選
+    # 母體篩選：學院、系、班級 可複選
     population_attrs = st.multiselect(
-        "學院、班級篩選（可複選交叉比對或留空表示全校）", 
-        ["學院", "班級"],
+        "學院、系、班級篩選（可複選交叉比對或留空表示全校）", 
+        ["學院", "系", "班級"],
         default=[],
         placeholder="不篩選(全校)",
     )
 
     selected_colleges = []
+    selected_departments = []
     selected_classes = []
     if "學院" in population_attrs and "學院" in df.columns:
         college_values = [x for x in college_order if x in df["學院"].dropna().astype(str).unique()]
@@ -403,6 +427,15 @@ with st.sidebar:
         selected_colleges = st.multiselect(
             "選取學院（可多選）",
             college_values + extras,
+            default=[],
+            placeholder="不篩選(全校)",
+        )
+    if "系" in population_attrs and "系" in df.columns:
+        department_values = [x for x in DEPARTMENT_ORDER if x in df["系"].dropna().astype(str).unique()]
+        department_extras = [x for x in sorted(df["系"].dropna().astype(str).unique()) if x not in department_values]
+        selected_departments = st.multiselect(
+            "選取系（可多選）",
+            department_values + department_extras,
             default=[],
             placeholder="不篩選(全校)",
         )
@@ -421,11 +454,12 @@ with st.sidebar:
     as_percent = st.checkbox("顯示百分比 (%)", value=True)
 
     if as_percent:
-        pct_mode = st.radio(
+        pct_mode_display = st.radio(
             "百分比母體",
             ["全體：圖示全體=100%", "分組百分比：各組各自總和=100%"],
             index=1,
         )
+        pct_mode = "overall" if pct_mode_display.startswith("全體") else "group"
     else:
         pct_mode = None
 
@@ -437,10 +471,12 @@ with st.sidebar:
 # Apply population filter (母體)：符合任一選項
 mask = pd.Series(True, index=df.index)
 if population_attrs:
-    if selected_colleges or selected_classes:
+    if selected_colleges or selected_departments or selected_classes:
         mask = pd.Series(False, index=df.index)
         if selected_colleges:
             mask |= df["學院"].isin(selected_colleges)
+        if selected_departments:
+            mask |= df["系"].isin(selected_departments)
         if selected_classes:
             mask |= df["班級"].isin(selected_classes)
     else:
@@ -449,7 +485,7 @@ if population_attrs:
 
 filtered_df = df[mask]
 if filtered_df.empty:
-    st.warning("母體篩選後無資料，請調整學院 / 班級選擇。")
+    st.warning("母體篩選後無資料，請調整學院 / 系 / 班級選擇。")
 
 # 若為學院/班級相關問題，先套用 normalization.py 提供的預設排序
 grouped = (group != "(不分組)")
@@ -469,14 +505,14 @@ else:
     x_col = result.columns[0]
     group_col = None
 
-if x_col in ["學院", "班級"]:
-    result = apply_normalized_order(result, x_col, college_order)
+if x_col in ["學院", "系", "班級"]:
+    result = apply_normalized_order(result, x_col, college_order, DEPARTMENT_ORDER)
 
-if grouped and group_col in ["學院", "班級"]:
-    result = apply_normalized_order(result, group_col, college_order)
+if grouped and group_col in ["學院", "系", "班級"]:
+    result = apply_normalized_order(result, group_col, college_order, DEPARTMENT_ORDER)
 
 q_base = q.replace("__cat", "").replace("__num", "")
-table_caption = build_table_caption(q_base, group, selected_colleges, selected_classes)
+table_caption = build_table_caption(q_base, group, selected_colleges, selected_departments, selected_classes)
 percent_col_label = get_percent_column_label(pct_mode, group)
 st.divider()
 
@@ -518,7 +554,7 @@ if num_col in df.columns:
         else:
             st.write("沒有有效 Likert 數值資料（全校）。")
 
-    filtered_active = bool(population_attrs and (selected_colleges or selected_classes))
+    filtered_active = bool(population_attrs and (selected_colleges or selected_departments or selected_classes))
     with col2:
         if filtered_active:
             st.markdown("**篩選後 Likert 統計**")
@@ -542,16 +578,26 @@ y = "percent" if as_percent else "count"
 y_axis_label = "百分比(%)" if as_percent else "人數"
 
 category_orders = {}
-if x_col in ["學院", "班級"]:
+if x_col in ["學院", "系", "班級"]:
     if x_col == "學院":
         category_orders[x_col] = college_order
+    elif x_col == "系":
+        unique_x = result[x_col].dropna().astype(str).unique()
+        preferred_x = [d for d in DEPARTMENT_ORDER if d in unique_x]
+        extras_x = sorted([d for d in unique_x if d not in preferred_x])
+        category_orders[x_col] = preferred_x + extras_x
     else:  # 班級
         unique_x = result[x_col].dropna().astype(str).unique()
         category_orders[x_col] = sorted(unique_x, key=lambda c: parse_class_key(c, college_order))
 
-if grouped and group in ["學院", "班級"]:
+if grouped and group in ["學院", "系", "班級"]:
     if group == "學院":
         category_orders[group] = college_order
+    elif group == "系":
+        unique_group = result[group].dropna().astype(str).unique()
+        preferred_group = [d for d in DEPARTMENT_ORDER if d in unique_group]
+        extras_group = sorted([d for d in unique_group if d not in preferred_group])
+        category_orders[group] = preferred_group + extras_group
     else:  # 班級
         unique_group = result[group].dropna().astype(str).unique()
         category_orders[group] = sorted(unique_group, key=lambda c: parse_class_key(c, college_order))
