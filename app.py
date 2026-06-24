@@ -354,8 +354,8 @@ def load_help_document(path: Path = HELP_DOC_PATH) -> str:
 
 
 # ---------- UI ----------
-st.set_page_config(page_title="115學年度大一新生學習適應性分析", layout="wide")
-st.title("115學年度大一新生學習適應性分析")
+st.set_page_config(page_title="114學年度大一新生學習適應性分析", layout="wide")
+st.title("114學年度大一新生學習適應性分析")
 
 if "show_help_doc" not in st.session_state:
     st.session_state.show_help_doc = False
